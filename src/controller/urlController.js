@@ -2,79 +2,61 @@ const urlModel = require('../model/urlmodel')
 const validUrl = require('valid-url')
 const shortid = require('shortid')
 
-const baseUrl = 'http:localhost:3000'
 
 const Shortenurl = async function (req, res) {
-    const longgerurl = req.body.longUrl // destructure the longUrl from req.body.longUrl
+    try {
+        const baseUrl = 'http:localhost:3000'
 
-    // check base url if valid using the validUrl.isUri method
-    if (!validUrl.isUri(baseUrl)) {
-        return res.status(401).json('Invalid base URL')
-    }
+        let body = req.body
 
-    // if valid, we create the url code
-    const urlCode = shortid.generate()
-
-    // check long url if valid using the validUrl.isUri method
-    if (validUrl.isUri(longgerurl)) {
-        try {
-            /* The findOne() provides a match to only the subset of the documents 
-            in the collection that match the query. In this case, before creating the short URL,
-            we check if the long URL was in the DB ,else we create it.
-            */
-            let url = await urlModel.findOne({longUrl: longgerurl
-            })
-             console.log(url)
-            // url exist and return the respose
-            if (url) {
-                res.json(url)
-            } else {
-                // join the generated short code the the base url
-                const shortUrl = baseUrl + '/' + urlCode
-
-                // invoking the Url model and saving to the DB
-                url = new urlModel({
-                    longUrl: longgerurl,
-                    shortUrl,
-                    urlCode,
-        
-                })
-                await url.save()
-                res.json(url)
-            }
+        if (Object.keys(body).length === 0) {
+            return res.status(400).send({ status: false, message: "Please enter the data" })
         }
-        // exception handler
-        catch (err) {
-            console.log(err)
-            res.status(500).json('Server Error')
+        if (!body.longUrl) {
+            return res.status(400).send({ status: false, message: "Please Provide the URL for shorten url" })
         }
-    } else {
-        res.status(401).json('Invalid longUrl')
+        if (!validUrl.isUri(body.longUrl)) {
+            return res.status(400).send({ status: false, message: "Not a valid URL" })
+        }
+
+        let FindUrl = await urlModel.findOne({ longUrl: body.longUrl });  
+
+        if (FindUrl) {
+            return res.status(400).send({ status: false, message: "urlcode is already in used" })
+        }
+        let urlCode = shortid.generate().toLowerCase()
+        let shortUrl = baseUrl + '/' + urlCode
+
+        body.shortUrl = shortUrl
+        body.urlCode = urlCode
+
+        await urlModel.create(body)
+
+        let ShowUrl = await urlModel.findOne({ longUrl: body.longUrl }).select({ longUrl: 1, shortUrl: 1, urlCode: 1, _id: 0 })
+
+        return res.status(201).send({ Status: true, data: ShowUrl })
+
+    } catch (err) {
+        return res.status(500).send({ status: false, message: err.message })
     }
 }
 
+const getShortenurl = async function (req, res) {
+    try {
+        let code = req.params.urlCode
+
+        let fetchCode = await urlModel.findOne({ urlCode: code })
+        //console.log(fetchCode)
+
+        if (!fetchCode)
+            return res.status(400).send({ status: false, message: "Invalid Url-Code" })
         
-        // let longurl=await urlModel.create(body)
-        // console.log(longurl)
-        // const Longurl=body.longUrl
-
-        // const urlId = shortId.generate();
-        // console.log(urlId)
-         
-        // if (validateUrl(Longurl)) {
-        // let url = await urlModel.findOne({ Longurl });
-        // console.log(url)
-        //  }
-        
+            res.status(303).redirect(fetchCode.longUrl)
+    } catch (err) {
+        return res.status(500).send({ Status: false, error: message.err })
+    }
+}
 
 
-        
-
-
-
-    // } catch (err) {
-    //     res.status(500).send({ status: false, error: err.message });
-    // }
-
-
-    module.exports.Shortenurl = Shortenurl
+module.exports.Shortenurl = Shortenurl
+module.exports.getShortenurl = getShortenurl
