@@ -62,7 +62,7 @@ const Shortenurl = async function (req, res) {
     } else {
       let profile = await urlModel.findOne({ longUrl: body.longUrl }).select({ longUrl: 1, shortUrl: 1, urlCode: 1, _id: 0 });
       await SETEX_ASYNC(`${body.longUrl}`, 3600, JSON.stringify(profile))
-      res.send({ data: profile });
+      res.status(201).send({ data: profile });
     }
   } catch (err) {
     return res.status(500).send({ status: false, message: err.message })
