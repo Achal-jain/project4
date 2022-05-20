@@ -40,11 +40,11 @@ const Shortenurl = async function (req, res) {
       return res.status(400).send({ status: false, message: "Not a valid URL" })
     }
 
-    let FindUrl = await urlModel.findOne({ longUrl: body.longUrl });
+    // let FindUrl = await urlModel.findOne({ longUrl: body.longUrl });
 
-    if (FindUrl) {
-      return res.status(400).send({ status: false, message: "urlcode is already in used" })
-    }
+    // if (FindUrl) {
+    //   return res.status(400).send({ status: false, message: "urlcode is already in used" })
+    // }
     let urlCode = shortid.generate().toLowerCase()
     let shortUrl = baseUrl + '/' + urlCode
 
@@ -62,7 +62,7 @@ const Shortenurl = async function (req, res) {
     } else {
       let profile = await urlModel.findOne({ longUrl: body.longUrl }).select({ longUrl: 1, shortUrl: 1, urlCode: 1, _id: 0 });
       await SETEX_ASYNC(`${body.longUrl}`, 3600, JSON.stringify(profile))
-      res.status(201).send({ data: profile });
+      res.status(201).send({ status: true , data: profile });
     }
   } catch (err) {
     return res.status(500).send({ status: false, message: err.message })
@@ -84,7 +84,7 @@ const getShortenurl = async function (req, res) {
       let getUrl = await urlModel.findOne({ urlCode: req.params.urlCode });
 
       if (!getUrl) {
-        return res.status(400).send({ status: false, message: "Invalid Url-Code" });
+        return res.status(404).send({ status: false, message: "Invalid Url-Code" });
       }
       await SETEX_ASYNC(`${req.params.urlCode}`, 3600, JSON.stringify(getUrl));
       return res.status(302).redirect(getUrl.longUrl);
