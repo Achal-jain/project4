@@ -40,11 +40,6 @@ const Shortenurl = async function (req, res) {
       return res.status(400).send({ status: false, message: "Not a valid URL" })
     }
 
-    // let FindUrl = await urlModel.findOne({ longUrl: body.longUrl });
-
-    // if (FindUrl) {
-    //   return res.status(400).send({ status: false, message: "urlcode is already in used" })
-    // }
     let urlCode = shortid.generate().toLowerCase()
     let shortUrl = baseUrl + '/' + urlCode
 
